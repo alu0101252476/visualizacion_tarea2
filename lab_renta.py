@@ -252,13 +252,13 @@ def imagen_5(nivelestudios_xlsx):
       + geom_col(position="stack")
       + coord_flip()
       + labs(title=f"Distribución del nivel de estudios por municipio en {isla_sel} en {año_sel}",
-             x="Municipio", y="Porcentaje (%)", fill="Nivel de estudios")
+             x="Municipio", y="Porcentaje", fill="Nivel de estudios")
       + theme_minimal()
       + scale_fill_brewer(type="qual", palette="Set1")
       + theme(figure_size=(12, 14), plot_title=element_text(weight="bold"))
   )
   # Guardamos el gráfico en formato PNG
-  grafico.save("nivest.png", dpi=300)
+  grafico.save("images/nivest.png", dpi=300)
 
 @asset(deps=[imagen_1, imagen_2, imagen_3, imagen_4, imagen_5])
 def git_push():
