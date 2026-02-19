@@ -1,5 +1,6 @@
 import os
 import subprocess
+import re
 import pandas as pd
 import geopandas as gpd
 from dagster import asset, job
@@ -197,7 +198,69 @@ def imagen_4(distribucion_renta_canarias_csv, codislas_csv):
   # Guardamos el archivo en PNG
   grafico.save("images/distrenta_img4", dpi=300)
 
-@asset(deps=[imagen_1, imagen_2, imagen_3, imagen_4])
+@asset(deps=[git_pull])
+def nivelestudios_xlsx():
+  # Cargamos nivelestudios.xlsx desde el repositorio
+  file_path = "data/nivelestudios.xlsx"
+  if not os.path.exists(file_path):
+    raise FileNotFoundError(f"No se encontró el archivo: {file_path}")
+  df = pd.read_excel(file_path, engine="openpyxl")
+  return df
+
+@asset(deps=[nivelestudios_xlsx])
+def imagen_5(nivelestudios_xlsx):
+  # Definimos año e isla
+  año_sel = 2023
+  isla_sel = "Gran Canaria"
+  # Cargamos los datos del Excel
+  df = nivelestudios_xlsx.copy()
+  # Renombramos las columnas
+  df = df.rename(columns={"Municipios de 500 habitantes o más": "municipio",
+                          "Sexo": "sexo", "Nacionalidad": "nacionalidad",
+                          "Nivel de estudios en curso": "nivel_estudios",
+                          "Periodo": "fecha", "Total": "valor"})
+  # Filtramos por Las Palmas (35)
+  if "codigo_provincia" in df.columns:
+      df = df[df["codigo_provincia"].astype(str).str.startswith("35")]
+  # Convertimos la fecha a formato datetime
+  df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+  # Filtramos por el año seleccionado
+  df = df[df["fecha"].dt.year == año_sel].copy()
+  # Limpiamos el nombre del municipio eliminando números y espacios extra
+  df["municipio"] = df["municipio"].apply(lambda x: re.sub(r'\d+', '', str(x)).strip())
+  # Renombramos los niveles de estudio
+  mapeo_niveles = {
+      "Cursa estudios pero no hay información sobre los mismos": "Sin información",
+      "Primera etapa de Educación Secundaria y similar": "Secundaria (primera etapa)",
+      "Segunda etapa de Educación Secundaria, con orientación profesional (con y sin continuidad en la educación superior); Educación postsecundaria no superior":
+          "Secundaria (segunda etapa con orient. prof.)",
+      "Segunda etapa de educación secundaria, con orientación general":
+          "Secundaria (segunda etapa con orient. gen.)"}
+  df["nivel_estudios"] = df["nivel_estudios"].replace(mapeo_niveles)
+  # Eliminamos categorías
+  df = df[~df["nivel_estudios"].isin(["Total", "No cursa estudios"])]
+  # Agrupamos por municipio y nivel de estudios sumando valores
+  df_grouped = df.groupby(["municipio", "nivel_estudios"], as_index=False)["valor"].sum()
+  # Calculamos el total por municipio
+  df_grouped["total_municipio"] = df_grouped.groupby("municipio")["valor"].transform("sum")
+  # Calculamos el porcentaje respecto al total del municipio (gráfico al 100%)
+  df_grouped["porcentaje"] = (df_grouped["valor"] / df_grouped["total_municipio"] * 100)
+  # Ordenamos los municipios alfabéticamente en orden inverso
+  df_grouped["municipio"] = pd.Categorical(df_grouped["municipio"], categories=sorted(df_grouped["municipio"].unique(), reverse=True), ordered=True)
+  # Generamos el gráfico de barras apiladas
+  grafico = (ggplot(df_grouped, aes(x="municipio", y="porcentaje", fill="nivel_estudios"))
+      + geom_col(position="stack")
+      + coord_flip()
+      + labs(title=f"Distribución del nivel de estudios por municipio en {isla_sel} en {año_sel}",
+             x="Municipio", y="Porcentaje (%)", fill="Nivel de estudios")
+      + theme_minimal()
+      + scale_fill_brewer(type="qual", palette="Set1")
+      + theme(figure_size=(12, 14), plot_title=element_text(weight="bold"))
+  )
+  # Guardamos el gráfico en formato PNG
+  grafico.save("nivest.png", dpi=300)
+
+@asset(deps=[imagen_1, imagen_2, imagen_3, imagen_4, imagen_5])
 def git_push():
   repo_path = "."
   commit_msg = "Actualización desde Dagster"
