@@ -209,9 +209,8 @@ def nivelestudios_xlsx():
 
 @asset(deps=[nivelestudios_xlsx])
 def imagen_5(nivelestudios_xlsx):
-  # Definimos año e isla
+  # Definimos el año
   año_sel = 2023
-  isla_sel = "Gran Canaria"
   # Cargamos los datos del Excel
   df = nivelestudios_xlsx.copy()
   # Renombramos las columnas
@@ -251,7 +250,7 @@ def imagen_5(nivelestudios_xlsx):
   grafico = (ggplot(df_grouped, aes(x="municipio", y="porcentaje", fill="nivel_estudios"))
       + geom_col(position="stack")
       + coord_flip()
-      + labs(title=f"Distribución del nivel de estudios por municipio en {isla_sel} en {año_sel}",
+      + labs(title=f"Distribución del nivel de estudios por municipio en Las Palmas en {año_sel}",
              x="Municipio", y="Porcentaje", fill="Nivel de estudios")
       + theme_minimal()
       + scale_fill_brewer(type="qual", palette="Set1")
