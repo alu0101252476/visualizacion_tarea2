@@ -3,18 +3,20 @@ import subprocess
 import re
 import pandas as pd
 import geopandas as gpd
-from dagster import asset, job
+from dagster import asset
 from plotnine import *
 from plotnine.themes import theme_minimal, theme_void
 
 @asset
 def git_pull():
   repo_path = "."
+  branch = "practica-calidad-checks"
   if not os.path.exists(repo_path):
     raise FileNotFoundError(f"El repositorio no existe: {repo_path}")
   try:
     # Hacemos un pull
-    result = subprocess.run(["git", "-C", repo_path, "pull"], capture_output=True, text=True, check=True)
+    subprocess.run(["git", "-C", repo_path, "checkout", branch], check=True)
+    result = subprocess.run(["git", "-C", repo_path, "pull", "origin", branch], capture_output=True, text=True, check=True)
     print(f"Git pull realizado correctamente: {result.stdout}")
   except subprocess.CalledProcessError as e:
     print(f"Error haciendo git pull: {e.stderr}")
@@ -23,7 +25,7 @@ def git_pull():
 @asset(deps=[git_pull])
 def codislas_csv():
   # Cargamos codislas.csv desde el repositorio
-  file_path = "data/codislas.csv"
+  file_path = "./data/codislas.csv"
   if not os.path.exists(file_path):
     raise FileNotFoundError(f"No se encontró el archivo: {file_path}")
   df = pd.read_csv(file_path, sep=";")
@@ -32,7 +34,7 @@ def codislas_csv():
 @asset(deps=[git_pull])
 def distribucion_renta_canarias_csv():
   # Cargamos distribucion-renta-canarias.csv desde el repositorio
-  file_path = "data/distribucion-renta-canarias.csv"
+  file_path = "./data/distribucion-renta-canarias.csv"
   if not os.path.exists(file_path):
     raise FileNotFoundError(f"No se encontró el archivo: {file_path}")
   df = pd.read_csv(file_path)
@@ -41,7 +43,7 @@ def distribucion_renta_canarias_csv():
 @asset(deps=[git_pull])
 def municipios_geojson():
   # Cargamos municipios.geojson desde el repositorio
-  file_path = "data/municipios.geojson"
+  file_path = "./data/municipios.geojson"
   if not os.path.exists(file_path):
     raise FileNotFoundError(f"No se encontró el archivo: {file_path}")
   gdf = gpd.read_file(file_path)
@@ -73,7 +75,7 @@ def imagen_1(distribucion_renta_canarias_csv):
     + theme(figure_size=(10, 6), plot_title=element_text(weight="bold"))
     )
   # Guardamos el gráfico en PNG
-  grafico.save("images/distrenta_img1", dpi=300)
+  grafico.save("./images/distrenta_img1", dpi=300)
 
 @asset(deps=[distribucion_renta_canarias_csv])
 def imagen_2(distribucion_renta_canarias_csv):
@@ -100,7 +102,7 @@ def imagen_2(distribucion_renta_canarias_csv):
     + theme(figure_size=(10, 6), plot_title=element_text(weight="bold"))
     )
   # Guardamos el gráfico en PNG
-  grafico.save("images/distrenta_img2", dpi=300)
+  grafico.save("./images/distrenta_img2", dpi=300)
 
 @asset(deps=[distribucion_renta_canarias_csv, municipios_geojson])
 def imagen_3(distribucion_renta_canarias_csv, municipios_geojson):
@@ -165,7 +167,7 @@ def imagen_3(distribucion_renta_canarias_csv, municipios_geojson):
     + theme(plot_title=element_text(weight="bold", size=14))
   )
   # Guardamos el archivo en PNG
-  mapa_plotnine.save("images/distrenta_img3", dpi=300, width=14, height=6, units="in")
+  mapa_plotnine.save("./images/distrenta_img3", dpi=300, width=14, height=6, units="in")
 
 @asset(deps=[distribucion_renta_canarias_csv, codislas_csv])
 def imagen_4(distribucion_renta_canarias_csv, codislas_csv):
@@ -196,7 +198,7 @@ def imagen_4(distribucion_renta_canarias_csv, codislas_csv):
     + theme(figure_size=(10, 8), plot_title=element_text(weight="bold"))
   )
   # Guardamos el archivo en PNG
-  grafico.save("images/distrenta_img4", dpi=300)
+  grafico.save("./images/distrenta_img4", dpi=300)
 
 @asset(deps=[git_pull])
 def nivelestudios_xlsx():
@@ -257,21 +259,23 @@ def imagen_5(nivelestudios_xlsx):
       + theme(figure_size=(12, 14), plot_title=element_text(weight="bold"))
   )
   # Guardamos el gráfico en formato PNG
-  grafico.save("images/nivest.png", dpi=300)
+  grafico.save("./images/nivest.png", dpi=300)
 
 @asset(deps=[imagen_1, imagen_2, imagen_3, imagen_4, imagen_5])
 def git_push():
   repo_path = "."
+  branch = "practica-calidad-checks"
   commit_msg = "Actualización desde Dagster"
   if not os.path.exists(repo_path):
     raise FileNotFoundError(f"El repositorio no existe: {repo_path}")
   try:
+    subprocess.run(["git", "-C", repo_path, "checkout", branch], check=True)
     # Agregamos todos los cambios
     subprocess.run(["git", "-C", repo_path, "add", "."], check=True)
     # Hacemos un commit
     subprocess.run(["git", "-C", repo_path, "commit", "-m", commit_msg], check=True)
     # Hacemos un push
-    result = subprocess.run(["git", "-C", repo_path, "push"], capture_output=True, text=True, check=True)
+    result = subprocess.run(["git", "-C", repo_path, "push", "origin", branch], capture_output=True, text=True, check=True)
     print(f"Git push realizado correctamente: {result.stdout}")
   except subprocess.CalledProcessError as e:
     print(f"Error haciendo git push: {e.stderr}")

@@ -1,16 +1,12 @@
-# Proyecto "visualizacion_tarea2"
-**Tarea 2 de la asignatura de Visualización**
+# Proyecto "practica-calidad-checks"
+**Tarea 3 de la asignatura de Visualización**
 
-En este proyecto, construimos un pipeline utilizando Dagster para automatizar la visualización de datos sobre la distribución de la renta en Canarias.
+En este proyecto, extendemos el pipeline de Dagster de la tarea anterior incorporando asset checks para validar la calidad de los datos y la integridad de las visualizaciones en cada etapa del proceso.
 
-En primer lugar, se define un asset que ejecuta un git pull para asegurar que el repositorio local esté sincronizado con la versión de GitHub antes de trabajar con los datos.
+En la etapa de carga, se definen dos checks. El primero verifica que los nombres de las islas están estandarizados, detectando variantes de mayúsculas o espacios extra que provocarían duplicados en las leyendas de los gráficos. El segundo comprueba que la columna de distribución de renta no supera un umbral del 5% de nulos, ya que una presencia elevada de huecos rompe la continuidad visual de las series temporales.
 
-A continuación, se cargan tres fuentes de datos desde la carpeta data del repositorio. Un archivo CSV con los códigos y nombres de municipios por isla, otro CSV con la distribución de la renta en Canarias y un archivo GeoJSON con la geometría de los municipios para trazar un mapa.
+En la etapa de transformación, se añaden otros dos checks. El primero limita el número de categorías únicas de nivel de estudios a un máximo de 9, umbral que supera la capacidad de la memoria visual del usuario. El segundo valida que todos los valores se encuentran dentro del rango válido de 0 a 100, dado que representan porcentajes y cualquier valor fuera de ese rango distorsiona la escala del eje Y.
 
-Posteriormente, se generan cuatro visualizaciones que se guardan en la carpeta images del repositorio:
-- La primera muestra la evolución temporal de los distintos tipos de renta en Canarias mediante un gráfico de líneas.
-- La segunda representa la distribución por año y tipo de renta en Canarias usando un gráfico de barras agrupadas.
-- La tercera combina la información estadística con la cartografía municipal para construir mapas por tipo de renta en el año 2023, procesando las geometrías y uniendo los datos por código territorial.
-- La cuarta visualización se centra en Gran Canaria en 2023, filtrando sus municipios y mostrando la composición de la renta mediante un gráfico de barras apiladas.
+En la etapa de visualización, se incorporan dos checks finales. El primero comprueba que el eje Y del gráfico de barras agrupadas parte desde cero, verificando que no existen valores negativos en los datos que desplacen el origen. El segundo valida que el gráfico existe en disco y supera un tamaño mínimo de 80 KB, descartando exportaciones vacías o fallidas.
 
-Finalmente, se define un asset que añade los cambios al repositorio, realiza un commit y ejecuta un git push, guardando así todas las visualizaciones en el repositorio de GitHub.
+Además, todos los checks incluyen metadata con el principio de la Gestalt asociado y una inyección de fallo comentada que permite comprobar el error sin modificar los assets originales.
