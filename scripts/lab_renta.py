@@ -10,7 +10,7 @@ from plotnine.themes import theme_minimal, theme_void
 @asset
 def git_pull():
   repo_path = "."
-  branch = "practica-calidad-checks"
+  branch = "practica-automatizacion"
   if not os.path.exists(repo_path):
     raise FileNotFoundError(f"El repositorio no existe: {repo_path}")
   try:
@@ -264,7 +264,7 @@ def imagen_5(nivelestudios_xlsx):
 @asset(deps=[imagen_1, imagen_2, imagen_3, imagen_4, imagen_5])
 def git_push():
   repo_path = "."
-  branch = "practica-calidad-checks"
+  branch = "practica-automatizacion"
   commit_msg = "Actualización desde Dagster"
   if not os.path.exists(repo_path):
     raise FileNotFoundError(f"El repositorio no existe: {repo_path}")
