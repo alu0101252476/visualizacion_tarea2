@@ -1,10 +1,25 @@
 # Proyecto "practica-automatizacion"
-**Tarea 4 de la asignatura de Visualización**
+**Tarea final de la asignatura de Visualización**
 
-En este proyecto, extendemos el pipeline de Dagster de la tarea anterior incorporando gráficos generados mediante Inteligencia Artificial (LLM), automatización mediante sensores y generación de un mapa en Plotline.
+En este proyecto, extendemos todo lo que hemos realizado en las prácticas anteriores para generar un proyecto final.
 
-Primero, se cargan y transforman los datos de distribución de renta por tipo y año, estandarizando las columnas para facilitar su uso por la IA. A continuación, se generan plantillas que permiten al modelo de LLM producir código Python siguiendo la gramática de gráficos de Wickham y aplicando principios Gestalt, obteniendo así gráficos de líneas para mostrar la evolución temporal de la renta y gráficos de barras agrupadas por tipo y año.
+El código cuenta con las siguientes herramientas:
+- Carga de los datos con Pandas
+- Procesado de los datos con Pandas
+- Generación de imágenes con Plotnine
+- Visualizaciones con IA
+- Pull y push con GitHub
+- Checks y sensores con Dagster
 
-Luego, se realizan checks para comprobar que el código generado por la IA y los gráficos asociados están bien estructurados. Paralelamente, se procesa un GeoJSON de municipios para crear un mapa de la tasa de empleo con Plotnine, de manera similar al mapa generado en la tarea anterior.
+Para instalar las herramientas, primero crea un entorno de Python y ejecuta el siguiente comando:
 
-Todo el pipeline está automatizado mediante un sensor que detecta cambios en la carpeta de datos y ejecuta el job completo. Los gráficos generados se suben automáticamente a GitHub Pages, realizando commit únicamente cuando hay cambios, asegurando que las visualizaciones estén siempre actualizadas.
+```bash
+pip install -r requirements.txt
+```
+Para ejecutar el código completo en Dagster, ejecuta el siguiente comando dentro del entorno:
+
+```bash
+dagster dev -m definitions
+```
+
+Proyecto realizado por Rafael Medina Sosa (alu0101252476@ull.edu.es).

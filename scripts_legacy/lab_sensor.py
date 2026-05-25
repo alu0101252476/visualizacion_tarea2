@@ -1,22 +1,27 @@
 import os
 from dagster import sensor, RunRequest, AssetSelection, define_asset_job
 
-
-# Ejecutamos todos los assets del proyecto.
-job_everything = define_asset_job(
-    name="job_everything",
+##############################
+# PASO 1: CREAMOS EL TRABAJO #
+##############################
+# Ejecuta todos los assets del proyecto
+job_rentas = define_asset_job(
+    name="job_rentas",
     selection=AssetSelection.all()
 )
 
+#############################
+# PASO 1: CREAMOS EL SENSOR #
+#############################
 
-# Función que vigila cambios en la carpeta "data".
-@sensor(job=job_everything, minimum_interval_seconds=30)
-def sensor_data(context):
+# Vigila cambios en la carpeta "data"
+@sensor(job=job_rentas, minimum_interval_seconds=30)
+def sensor_datos(context):
     carpeta = "./data"
     if not os.path.exists(carpeta):
         context.log.warning(f"Carpeta {carpeta} no encontrada.")
         return
-    # Calculamos el mtime máximo de todos los ficheros de "data".
+    # Calculamos el mtime máximo de todos los ficheros de "data"
     mtimes = []
     for nombre in os.listdir(carpeta):
         ruta = os.path.join(carpeta, nombre)
@@ -26,7 +31,7 @@ def sensor_data(context):
         return
     curr_mtime = str(max(mtimes))
     last_mtime = context.cursor or "0"
-    # Lanzamos si detecta un cambio.
+    # Lanzamos si detecta un cambio
     if curr_mtime != last_mtime:
         context.log.info(f"Cambio detectado en {carpeta}. Lanzando pipeline...")
         yield RunRequest(run_key=curr_mtime)
